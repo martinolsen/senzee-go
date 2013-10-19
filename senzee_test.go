@@ -60,7 +60,7 @@ func TestCardToInt(t *testing.T) {
 	for s := uint(0); s < 4; s++ {
 		for r := 0; r < 13; r++ {
 			c := cactuskev.NewCard(cactuskev.Suit(0x1000<<(s)), cactuskev.Rank(r))
-			i := cardToInt(c)
+			i := CardToInt(c)
 
 			switch {
 			// TODO - verify number of set bits
@@ -117,7 +117,7 @@ func TestHandToInt(t *testing.T) {
 							for g := f + 1; g < 52; g++ {
 								h.SetCard(6, deck[g])
 
-								i := handToInt(h)
+								i := HandToInt(h)
 
 								switch {
 								// TODO - verify number of set bits

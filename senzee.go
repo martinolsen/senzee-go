@@ -35,7 +35,7 @@ func New() *Table {
 							for g := f + 1; g < 52; g++ {
 								hand.SetCard(6, deck[g])
 
-								(*t)[index52c7(handToInt(hand))] = eval_7hand(hand)
+								(*t)[index52c7(HandToInt(hand))] = eval_7hand(hand)
 							}
 						}
 					}
@@ -87,7 +87,7 @@ func (t *Table) Eval(h cactuskev.Hand) cactuskev.Score {
 }
 
 func (t *Table) eval_7hand_fast(h cactuskev.Hand) int16 {
-	return (*t)[index52c7(handToInt(h))]
+	return (*t)[index52c7(HandToInt(h))]
 }
 
 func eval_7hand(h cactuskev.Hand) int16 {
@@ -136,7 +136,7 @@ func eval_5hand_fast(h cactuskev.Hand) int16 {
 */
 
 // Convert to a one-bit representation
-func cardToInt(c cactuskev.Card) int64 {
+func CardToInt(c cactuskev.Card) int64 {
 	switch c.Suit() {
 	case cactuskev.Club:
 		return 1 << (uint(c.Rank()) + (0 * 13))
@@ -152,11 +152,11 @@ func cardToInt(c cactuskev.Card) int64 {
 	}
 }
 
-func handToInt(h cactuskev.Hand) int64 {
+func HandToInt(h cactuskev.Hand) int64 {
 	var x int64
 
 	for i := 0; i < h.Len(); i++ {
-		x |= cardToInt(h.Card(i))
+		x |= CardToInt(h.Card(i))
 	}
 
 	return x
