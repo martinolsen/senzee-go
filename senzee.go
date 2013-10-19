@@ -2,8 +2,10 @@
 package senzee
 
 import (
+	"encoding/gob"
 	"github.com/martinolsen/cactuskev-go"
 	"log"
+	"os"
 )
 
 const TableSize = 133784560
@@ -43,6 +45,34 @@ func New() *Table {
 	}
 
 	return t
+}
+
+func (t *Table) Store(name string) error {
+	file, err := os.Create(name)
+	if err != nil {
+		return err
+	}
+
+	if err := gob.NewEncoder(file).Encode(t); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func Load(name string) (*Table, error) {
+	file, err := os.Open(name)
+	if err != nil {
+		return nil, err
+	}
+
+	t := new(Table)
+
+	if err := gob.NewDecoder(file).Decode(t); err != nil {
+		return nil, err
+	}
+
+	return t, nil
 }
 
 func (t *Table) Eval(h cactuskev.Hand) cactuskev.Score {
