@@ -1,15 +1,75 @@
 package senzee
 
 import (
+	"flag"
 	"github.com/martinolsen/cactuskev-go"
 	"testing"
 )
 
-func BenchmarkSenzee(b *testing.B) {
-	table := New()
+var senzee *Table
+
+func init() {
+	var filename = flag.String("senzee", "", "if set, location of data file")
+
+	flag.Parse()
+
+	if *filename == "" {
+		senzee = New()
+	} else if table, err := Load(*filename); err == nil {
+		senzee = table
+	} else {
+		senzee = New()
+		senzee.Store(*filename)
+	}
+}
+
+func BenchmarkFiveHand(b *testing.B) {
+	h := cactuskev.RandomHand(5)
+
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		cactuskev.AllFive(nil, table.Eval)
+		senzee.Eval(h)
+	}
+}
+
+func BenchmarkSevenHand(b *testing.B) {
+	h := cactuskev.RandomHand(7)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		senzee.Eval(h)
+	}
+}
+
+func BenchmarkEval5HandFast(b *testing.B) {
+	h := cactuskev.RandomHand(5)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		eval_5hand_fast(h)
+	}
+}
+
+func BenchmarkEval7HandFast(b *testing.B) {
+	h := cactuskev.RandomHand(7)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		senzee.eval_7hand_fast(h)
+	}
+}
+
+func BenchmarkEval7Hand(b *testing.B) {
+	h := cactuskev.RandomHand(7)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		eval_7hand(h)
 	}
 }
 
@@ -30,10 +90,8 @@ func TestEval7Hand(t *testing.T) {
 }
 
 func TestEval7HandFast(t *testing.T) {
-	table := New()
-
 	cactuskev.AllSeven(t, func(h cactuskev.Hand) cactuskev.Score {
-		return cactuskev.CactusKevScore(table.eval_7hand_fast(h))
+		return cactuskev.CactusKevScore(senzee.eval_7hand_fast(h))
 	})
 }
 
@@ -42,10 +100,7 @@ func TestFive(t *testing.T) {
 		t.Skip("not running long tests")
 	}
 
-	t.Logf("Creating table...")
-	table := New()
-
-	cactuskev.AllFive(t, table.Eval)
+	cactuskev.AllFive(t, senzee.Eval)
 }
 
 func TestSeven(t *testing.T) {
@@ -53,7 +108,22 @@ func TestSeven(t *testing.T) {
 		t.Skip("not running long tests")
 	}
 
-	cactuskev.AllSeven(t, New().Eval)
+	cactuskev.AllSeven(t, senzee.Eval)
+}
+
+func TestIntToCard(t *testing.T) {
+	for s := uint(0); s < 4; s++ {
+		for r := uint(0); r < 13; r++ {
+			i := uint64((1 << r) << (s * 16))
+			c := IntToCard(i)
+
+			if (s == 0 && c.Suit() != cactuskev.Spade) || (s == 1 && c.Suit() != cactuskev.Heart) || (s == 2 && c.Suit() != cactuskev.Diamond) || (s == 3 && c.Suit() != cactuskev.Club) {
+				t.Errorf("got suit %s, expected %s", c.Suit(), cactuskev.Suit(0x1000<<s))
+			}
+
+			panic("TODO - test rank")
+		}
+	}
 }
 
 func TestCardToInt(t *testing.T) {

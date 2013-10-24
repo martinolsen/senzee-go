@@ -3,6 +3,8 @@ package senzee
 
 import (
 	"encoding/gob"
+	"fmt"
+	"github.com/cznic/mathutil"
 	"github.com/martinolsen/cactuskev-go"
 	"log"
 	"os"
@@ -90,9 +92,89 @@ func (t *Table) eval_7hand_fast(h cactuskev.Hand) int16 {
 	return (*t)[index52c7(HandToInt(h))]
 }
 
+func NewHand(n int) cactuskev.Hand {
+	switch n {
+	case 5:
+		return NewHand5()
+	default:
+		return cactuskev.NewHand(n)
+	}
+}
+
+type hand5 uint64
+
+func NewHand5() *hand5 { h := hand5(0); return &h }
+
+func (h hand5) Prime() int {
+	var prime = 1
+
+	for i := 0; i < 5; i++ {
+		prime *= h.Card(i).Prime()
+	}
+
+	return prime
+}
+
+func (h hand5) Bit() (bit int) {
+	for i := 0; i < 5; i++ {
+		bit |= h.Card(i).Bit()
+	}
+
+	return bit
+}
+
+func (h hand5) Len() int {
+	var (
+		c int
+		n = int64(h)
+	)
+
+	for ; n != 0; c++ {
+		n &= n - 1
+	}
+
+	return c
+}
+
+func (h *hand5) SetCard(_ int, c cactuskev.Card) {
+	// TODO - do we need some verification of `index`?
+
+	*h |= hand5(CardToInt(c))
+}
+
+func (h hand5) Cards() []cactuskev.Card { panic("not implemented") }
+
+func (h hand5) Card(n int) cactuskev.Card {
+	if n < 0 || n > 5 {
+		panic("card index out of range")
+	}
+
+	if int64(h) == 0 {
+		panic("empty hand")
+	}
+
+	//fmt.Printf("%064b\n%064b\n", int64(h), 1<<uint(mathutil.BitLenUint64(uint64(h))-1))
+
+	for i := hand5(mathutil.BitLenUint64(uint64(h)) - 1); ; i-- {
+		/*fmt.Printf("n: % 2d, i: %064b (%d)\n", n, 1<<(i), i)
+		fmt.Printf("     , h: %064b\n", h)
+		fmt.Printf("     , ?: %064b\n", h&hand5(1<<i))*/
+
+		if n < 1 {
+			return IntToCard(uint64(1 << i))
+		} else if h&hand5(1<<i) != 0 {
+			n--
+		}
+	}
+
+	panic("card not found")
+}
+
+func (h hand5) String() string { return fmt.Sprintf("0x%016x b%064b", int64(h), int64(h)) }
+
 func eval_7hand(h cactuskev.Hand) int16 {
 	var (
-		sh   = cactuskev.NewHand(5)
+		sh   = NewHand5()
 		best = int16(9999)
 	)
 
@@ -125,15 +207,18 @@ func eval_5hand_fast(h cactuskev.Hand) int16 {
 	return int16(hash_values[find_fast(uint32(h.Prime()))])
 }
 
-/* TODO func intToCard(n uint) cactuskev.Card {
-	panic("TODO")
+func IntToCard(n uint64) cactuskev.Card {
+	var i = mathutil.BitLenUint64(n) - 1
 
-	return cactuskev.NewCard(
-		cactuskev.Suit(0x1000<<uint((n)/13)),
-		cactuskev.Rank((n)%13),
+	var card = cactuskev.NewCard(
+		cactuskev.Suit(0x1000<<uint(i/13)),
+		cactuskev.Rank(i%13),
 	)
+
+	//fmt.Printf("%d => %s\n", n, card)
+
+	return card
 }
-*/
 
 // Convert to a one-bit representation
 func CardToInt(c cactuskev.Card) int64 {
