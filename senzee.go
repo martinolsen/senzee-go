@@ -173,17 +173,14 @@ func (h hand5) Card(n int) cactuskev.Card {
 func (h hand5) String() string { return fmt.Sprintf("0x%016x b%064b", int64(h), int64(h)) }
 
 func eval_7hand(h cactuskev.Hand) int16 {
-	var (
-		sh   = NewHand5()
-		best = int16(9999)
-	)
+	best := int16(9999)
 
-	for i := 0; i < 21; i++ {
+	for i, sh := 0, hand5(0); i < 21; i++ {
 		for j := 0; j < 5; j++ {
 			sh.SetCard(j, h.Card(cactuskev.Perm7[i][j]))
 		}
 
-		if q := eval_5hand_fast(sh); q < best {
+		if q := eval_5hand_fast(&sh); q < best {
 			best = q
 		}
 	}
