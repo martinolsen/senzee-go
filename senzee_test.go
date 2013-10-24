@@ -3,15 +3,26 @@ package senzee
 import (
 	"flag"
 	"github.com/martinolsen/cactuskev-go"
+	"sync"
 	"testing"
 )
 
+func MakeTable() {
+}
+
+var filename = flag.String("senzee", "", "if set, location of data file")
 var senzee *Table
+var senzeeMutex sync.Mutex
 
-func init() {
-	var filename = flag.String("senzee", "", "if set, location of data file")
+func init() { flag.Parse() }
 
-	flag.Parse()
+func SenzeeTable() *Table {
+	senzeeMutex.Lock()
+	defer senzeeMutex.Unlock()
+
+	if senzee != nil {
+		return senzee
+	}
 
 	if *filename == "" {
 		senzee = New()
@@ -21,25 +32,31 @@ func init() {
 		senzee = New()
 		senzee.Store(*filename)
 	}
+
+	return senzee
 }
 
 func BenchmarkFiveHand(b *testing.B) {
 	h := cactuskev.RandomHand(5)
 
+	table := SenzeeTable()
+
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		senzee.Eval(h)
+		table.Eval(h)
 	}
 }
 
 func BenchmarkSevenHand(b *testing.B) {
 	h := cactuskev.RandomHand(7)
 
+	table := SenzeeTable()
+
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		senzee.Eval(h)
+		table.Eval(h)
 	}
 }
 
@@ -56,10 +73,12 @@ func BenchmarkEval5HandFast(b *testing.B) {
 func BenchmarkEval7HandFast(b *testing.B) {
 	h := cactuskev.RandomHand(7)
 
+	table := SenzeeTable()
+
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		senzee.eval_7hand_fast(h)
+		table.eval_7hand_fast(h)
 	}
 }
 
@@ -90,8 +109,9 @@ func TestEval7Hand(t *testing.T) {
 }
 
 func TestEval7HandFast(t *testing.T) {
+	table := SenzeeTable()
 	cactuskev.AllSeven(t, func(h cactuskev.Hand) cactuskev.Score {
-		return cactuskev.CactusKevScore(senzee.eval_7hand_fast(h))
+		return cactuskev.CactusKevScore(table.eval_7hand_fast(h))
 	})
 }
 
@@ -100,7 +120,7 @@ func TestFive(t *testing.T) {
 		t.Skip("not running long tests")
 	}
 
-	cactuskev.AllFive(t, senzee.Eval)
+	cactuskev.AllFive(t, SenzeeTable().Eval)
 }
 
 func TestSeven(t *testing.T) {
@@ -108,7 +128,7 @@ func TestSeven(t *testing.T) {
 		t.Skip("not running long tests")
 	}
 
-	cactuskev.AllSeven(t, senzee.Eval)
+	cactuskev.AllSeven(t, SenzeeTable().Eval)
 }
 
 func TestIntToCard(t *testing.T) {
