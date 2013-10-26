@@ -212,8 +212,6 @@ func IntToCard(n uint64) cactuskev.Card {
 		cactuskev.Rank(i%13),
 	)
 
-	//fmt.Printf("%d => %s\n", n, card)
-
 	return card
 }
 
